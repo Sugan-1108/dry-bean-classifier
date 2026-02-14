@@ -245,7 +245,20 @@ with tab3:
     Computer Vision and Machine Learning Techniques.*
     Computers and Electronics in Agriculture, 174, 105507.
     """)
-
+   st.subheader("📥 Download Test Data")
+    st.markdown("Use this sample CSV file (2,723 rows — 20% test split) to test the app:")
+    try:
+        with open("test_data_sample.csv", "rb") as f:
+            st.download_button(
+                label="⬇️ Download test_data_sample.csv",
+                data=f.read(),
+                file_name="test_data_sample.csv",
+                mime="text/csv",
+                help="20% test split of the Dry Bean dataset — ready to upload"
+            )
+    except FileNotFoundError:
+        st.info("Download test_data_sample.csv directly from the GitHub repository.")
+        
     st.subheader("🏆 Best Performing Model")
     best_model = metrics_df["Accuracy"].idxmax()
     best_acc   = metrics_df["Accuracy"].max()
