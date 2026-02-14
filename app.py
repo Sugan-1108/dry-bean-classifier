@@ -1,7 +1,7 @@
-
 # ============================================================
 # app.py — Dry Bean Classification Streamlit App
 # ML Assignment 2 | BITS Pilani M.Tech AIML/DSE
+# Author: Sugan Gowtham S R | ID: 2025AA05071
 # ============================================================
 
 import streamlit as st
@@ -66,15 +66,33 @@ st.divider()
 # ---- Sidebar ----
 with st.sidebar:
     st.header("⚙️ Controls")
+
     selected_model = st.selectbox(
         "Select Classification Model",
         list(models.keys())
     )
     st.info(f"Selected: **{selected_model}**")
+
     st.markdown("---")
-    st.markdown("📥 **Upload test CSV below (main panel)**")
-    st.markdown("The CSV must contain the 16 bean feature columns + Class column.")
-    st.markdown("Use `test_data_sample.csv` from the repository.")
+    st.markdown("### 📥 Download Test Data")
+    st.markdown("Don't have a test file? Download the sample CSV below and upload it in the main panel.")
+
+    try:
+        with open("test_data_sample.csv", "rb") as f:
+            test_csv_bytes = f.read()
+        st.download_button(
+            label="⬇️ Download test_data_sample.csv",
+            data=test_csv_bytes,
+            file_name="test_data_sample.csv",
+            mime="text/csv",
+            help="Download sample test data to try the app"
+        )
+    except FileNotFoundError:
+        st.warning("test_data_sample.csv not found in app directory.")
+
+    st.markdown("---")
+    st.markdown("**GitHub Repository:**")
+    st.markdown("[Sugan-1108/dry-bean-classifier](https://github.com/Sugan-1108/dry-bean-classifier)")
 
 # ---- Tabs ----
 tab1, tab2, tab3 = st.tabs(["📤 Upload & Predict", "📊 Metrics Comparison", "ℹ️ About Dataset"])
@@ -84,37 +102,49 @@ tab1, tab2, tab3 = st.tabs(["📤 Upload & Predict", "📊 Metrics Comparison", 
 # ===========================
 with tab1:
     st.subheader("📤 Upload Test Data (CSV)")
-    uploaded_file = st.file_uploader(
-        "Upload CSV file with bean features + Class column",
-        type=["csv"],
-        help="Upload test_data_sample.csv from the repository."
-    )
+
+    col_up, col_dl = st.columns([3, 1])
+    with col_up:
+        uploaded_file = st.file_uploader(
+            "Upload CSV file with bean features + Class column",
+            type=["csv"],
+            help="Upload test_data_sample.csv — available in sidebar or GitHub repo."
+        )
+    with col_dl:
+        st.markdown("**No file yet?**")
+        try:
+            with open("test_data_sample.csv", "rb") as f:
+                st.download_button(
+                    label="⬇️ Download sample CSV",
+                    data=f.read(),
+                    file_name="test_data_sample.csv",
+                    mime="text/csv"
+                )
+        except FileNotFoundError:
+            st.info("Get test_data_sample.csv from GitHub repo.")
 
     if uploaded_file is not None:
         try:
             df_upload = pd.read_csv(uploaded_file)
-            st.success(f"File uploaded: {df_upload.shape[0]} rows × {df_upload.shape[1]} cols")
+            st.success(f"✅ File uploaded: {df_upload.shape[0]} rows × {df_upload.shape[1]} columns")
             st.dataframe(df_upload.head(5), use_container_width=True)
 
-            # Check required columns
             missing_cols = [c for c in feat_cols if c not in df_upload.columns]
             has_target   = "Class" in df_upload.columns
 
             if missing_cols:
-                st.error(f"Missing feature columns: {missing_cols}")
+                st.error(f"❌ Missing feature columns: {missing_cols}")
             else:
                 X_up = df_upload[feat_cols].copy()
                 model = models[selected_model]
 
-                # Scale if needed
                 if selected_model in NEEDS_SCALING:
                     X_input = scaler.transform(X_up)
                 else:
                     X_input = X_up.values
 
-                # Predict
-                y_pred = model.predict(X_input)
-                y_prob = model.predict_proba(X_input)
+                y_pred      = model.predict(X_input)
+                y_prob      = model.predict_proba(X_input)
                 pred_labels = le.inverse_transform(y_pred)
 
                 st.subheader(f"🔮 Predictions — {selected_model}")
@@ -180,20 +210,19 @@ with tab1:
         except Exception as e:
             st.error(f"Error processing file: {e}")
     else:
-        st.info("👆 Upload a CSV file to get started. Use test_data_sample.csv from the repository.")
+        st.info("👆 Upload a CSV file to get started. Use the **Download sample CSV** button above or in the sidebar.")
 
 # ===========================
 # TAB 2: Metrics Comparison
 # ===========================
 with tab2:
-    st.subheader("📊 Model Comparison — All 6 Models")
+    st.subheader("📊 Model Comparison — All 6 Models (Trained on Dry Bean Dataset)")
     st.dataframe(
         metrics_df.style.highlight_max(axis=0, color="#d4edda").format("{:.2f}"),
         use_container_width=True
     )
-    st.caption("Green highlights = best value per metric. Accuracy/AUC/Precision/Recall/F1 in %. MCC is 0-1 scale.")
+    st.caption("🟢 Green highlights = best value per metric. Accuracy/AUC/Precision/Recall/F1 in %. MCC is 0–1 scale.")
 
-    # Bar chart
     st.subheader("📈 Visual Comparison")
     metric_choice = st.selectbox(
         "Select metric to visualize",
@@ -245,7 +274,8 @@ with tab3:
     Computer Vision and Machine Learning Techniques.*
     Computers and Electronics in Agriculture, 174, 105507.
     """)
-   st.subheader("📥 Download Test Data")
+
+    st.subheader("📥 Download Test Data")
     st.markdown("Use this sample CSV file (2,723 rows — 20% test split) to test the app:")
     try:
         with open("test_data_sample.csv", "rb") as f:
@@ -258,7 +288,7 @@ with tab3:
             )
     except FileNotFoundError:
         st.info("Download test_data_sample.csv directly from the GitHub repository.")
-        
+
     st.subheader("🏆 Best Performing Model")
     best_model = metrics_df["Accuracy"].idxmax()
     best_acc   = metrics_df["Accuracy"].max()
